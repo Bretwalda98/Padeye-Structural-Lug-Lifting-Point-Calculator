@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Padeye – Checks</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  html,body{height:100%} .card{border-radius:1rem;box-shadow:0 10px 20px rgba(0,0,0,.08)}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono","Courier New",monospace}
+  @media print{.no-print{display:none!important}.card{box-shadow:none;border:1px solid #999}}
+  canvas{image-rendering:crisp-edges}
+  .pass{color:#065f46;background:#ecfdf5;border:1px solid #10b981}
+  .fail{color:#7f1d1d;background:#fef2f2;border:1px solid #ef4444}
+  .warn{color:#92400e;background:#fffbeb;border:1px solid #f59e0b}
+</style>
+</head>
+<body class="bg-zinc-50 text-zinc-900">
+<div class="max-w-6xl mx-auto px-4 py-6">
+  <header class="mb-6 flex items-center justify-between">
+    <h1 class="text-2xl font-semibold">Padeye – Checks</h1>
+    <button onclick="window.print()" class="no-print px-4 py-2 rounded-lg bg-zinc-900 text-white">Print/Save</button>
+  </header>
+
+  <!-- Graphic -->
+  <section class="card bg-white p-4 mb-6">
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="md:col-span-2">
+        <canvas id="gfx" width="900" height="360" class="w-full rounded-lg border"></canvas>
+      </div>
+      <div class="text-sm space-y-2">
+        <p>Infographic updates live. Dimensions in <b>mm</b>, load in <b>kN</b></p>
+        <ul class="list-disc pl-5">
+          <li>dp, dh, rm, rc, tm, tc, weld leg <b>w</b>, tear-out length <b>ℓ</b></li>
+          <li>Loading × safety factor → Fdl (kN)</li>
+          <li>Allowables from fy with fractions: 0.9, 0.4, 0.45, 0.4, 0.4</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Inputs -->
+  <section class="grid lg:grid-cols-2 gap-6">
+    <div class="card bg-white p-4">
+      <h2 class="font-semibold mb-3">Geometry & Materials</h2>
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <label class="block">Pin Ø dp (mm)
+          <input id="dp" type="number" step="0.1" value="108" class="mt-1 w-full rounded-md border px-2 py-1">
+        </label>
+        <label class="block">Hole Ø dh (mm)
+          <input id="dh" type="number" step="0.1" value="112" class="mt-1 w-full rounded-md border px-2 py-1">
+        </label>
+
+        <label class="block">Mainplate radius rm (mm)
+          <input id="rm" type="number" step="0.1" value="200" class="mt-1 w-full rounded-md border px-2 py-1">
+        </label>
+        <label class="block">Cheek radius rc (mm)
+          <input id="rc" type="number" step="0.1" value="175" class="mt-1 w-full rounded-md border px-2 py-1">
+        </label>
+
+        <label class="block">Mainplate thickness tm (mm)
+          <input id="tm" type="number" step="0.1" value="40" class="mt-1 w-full rounded-md border px-2 py-1">
+        </label>
+        <label class="block">Cheek thickness tc (mm)
+          <input id="tc" type="number" step="0.1" value="20" class="mt-1 w-full rounded-md border px-2 py-1">
+        </label>
+
+        <label class="block">Cheek weld leg w (mm)
+          <input id="wleg" type="number" step="0.1" value="12" class="mt-1 w-full rounded-md border px-2 py-1">
+        </label>
+        <label class="block">Tear-out length ℓ (mm)
+          <input id="ell" type="number" step="0.1" value="400" class="mt-1 w-full rounded-md border px-2 py-1">
+        </label>
+
+        <label class="block">Yield fy (N/mm²)
+          <input id="fy" type="number" step="1" value="355" class="mt-1 w-full rounded-md border px-2 py-1">
+        </label>
+        <label class="block">Load angle α (deg)
+          <input id="ang" type="number" step="0.1" value="20" class="mt-1 w-full rounded-md border px-2 py-1">
+        </label>
+      </div>
+    </div>
+
+    <div class="card bg-white p-4">
+      <h2 class="font-semibold mb-3">Loading (matches C27:C30)</h2>
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <label class="block">Loading (kN)
+          <input id="Load" type="number" step="0.1" value="1500" class="mt-1 w-full rounded-md border px-2 py-1">
+        </label>
+        <label class="block">Safety factor v
+          <input id="v" type="number" step="0.01" value="1.3" class="mt-1 w-full rounded-md border px-2 py-1">
+        </label>
+        <div class="col-span-2 p-3 rounded-lg bg-zinc-50 border">
+          <div>Fdl = Loading × v</div>
+          <div class="mono text-xl"><span id="Fdl">—</span> kN</div>
+        </div>
+      </div>
+      <p class="text-xs text-zinc-500 mt-2">Inches shown beside mm for reference only.</p>
+      <div class="grid grid-cols-2 gap-3 text-xs mt-3">
+        <div>dp = <span id="dp_in">—</span> in</div>
+        <div>dh = <span id="dh_in">—</span> in</div>
+        <div>rm = <span id="rm_in">—</span> in</div>
+        <div>rc = <span id="rc_in">—</span> in</div>
+        <div>tm = <span id="tm_in">—</span> in</div>
+        <div>tc = <span id="tc_in">—</span> in</div>
+        <div>w = <span id="w_in">—</span> in</div>
+        <div>ℓ = <span id="l_in">—</span> in</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Results -->
+  <section class="card bg-white p-4 mt-6">
+    <h2 class="font-semibold mb-3">Checks & Utilisations (like L38:L71)</h2>
+    <div id="warns" class="space-y-2 mb-3"></div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr class="text-left border-b">
+            <th class="py-2">#</th>
+            <th class="py-2">Check</th>
+            <th class="py-2">Demand (MPa)</th>
+            <th class="py-2">Allowable (MPa)</th>
+            <th class="py-2">UC</th>
+            <th class="py-2">Status</th>
+          </tr>
+        </thead>
+        <tbody id="rows" class="align-top"></tbody>
+      </table>
+    </div>
+    <div class="grid md:grid-cols-3 gap-3 mt-4 text-sm">
+      <div class="p-3 rounded-lg bg-zinc-50 border">
+        <div class="font-medium">Areas & helpers</div>
+        <div id="helpers" class="mono text-xs mt-1"></div>
+      </div>
+      <div class="p-3 rounded-lg bg-zinc-50 border">
+        <div class="font-medium">Governing UC</div>
+        <div class="mono text-2xl"><span id="UGov">—</span></div>
+      </div>
+      <div class="p-3 rounded-lg bg-zinc-50 border">
+        <div class="font-medium">Snapshot</div>
+        <div id="snap" class="mono text-xs mt-1"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="text-xs text-zinc-500 mt-6">
+    Ingeniarch Labs
+  </footer>
+</div>
+
+<script>
+function gv(id){return parseFloat(document.getElementById(id).value||'0');}
+function set(id,v){document.getElementById(id).innerText=v;}
+function fmt(x,d=2){return isFinite(x)?x.toFixed(d):'—';}
+function mm2in(mm){return mm/25.4;}
+
+function compute(){
+  // Inputs
+  const dp=gv('dp'), dh=gv('dh'), rm=gv('rm'), rc=gv('rc');
+  const tm=gv('tm'), tc=gv('tc'), w=gv('wleg'), ell=gv('ell');
+  const fy=gv('fy'), L=gv('Load'), v=gv('v');
+
+  // Fdl
+  const Fdl=L*v; set('Fdl', fmt(Fdl,3));
+
+  // Inch helpers
+  set('dp_in', fmt(mm2in(dp),3)); set('dh_in', fmt(mm2in(dh),3));
+  set('rm_in', fmt(mm2in(rm),3)); set('rc_in', fmt(mm2in(rc),3));
+  set('tm_in', fmt(mm2in(tm),3)); set('tc_in', fmt(mm2in(tc),3));
+  set('w_in', fmt(mm2in(w),3)); set('l_in', fmt(mm2in(ell),3));
+
+  // Warnings
+  const warns=[];
+  if(dh-dp<4) warns.push(`Clearance rule: dh - dp = ${fmt(dh-dp)} mm (< 4 mm).`);
+  if(rm<dh/2) warns.push(`rm < dh/2 (outer radius smaller than hole).`);
+  if(tc>0 && rc<=0) warns.push(`Cheeks present but rc ≤ 0. Set rc.`);
+  document.getElementById('warns').innerHTML = warns.map(t=>`<div class="warn px-3 py-2 rounded-lg">${t}</div>`).join('');
+
+  // === Logic ===
+  // Areas (mm²)
+  const Aa = (rm-0.5*dh)*tm + 2*(rc-0.5*dh)*tc;   // J45
+  const Ab = 2*Aa;                                // J53
+  const Acc = tm*ell;                             // H73
+  const Aw = (rc>0 && w>0) ? (2*rc*w*Math.PI)/Math.SQRT2 : NaN; // J62
+
+  // Allowables (MPa)
+  const allow1 = 0.9*fy;   // bearing
+  const allow2 = 0.4*fy;   // shear a-a
+  const allow3 = 0.45*fy;  // tension b-b
+  const allow4 = 0.4*fy;   // weld shear
+  const allow5 = 0.4*fy;   // tear-out c-c
+
+  // Demands (MPa = N/mm²), Fdl is kN -> ×1000
+  const fp = (Fdl*1000)/(dp*(tm+2*tc));                // E37
+  const fs_aa = (1.1*0.5*Fdl*1000)/Aa;                 // E42
+  const fa_bb = (Fdl*1000)/Ab;                         // E50
+  const Fprime_kN = (tm+2*tc)>0 ? (tc*Fdl)/(tm+2*tc) : NaN; // H65
+  const fs_weld = (rc>0 && Aw>0) ? (2*Fprime_kN*1000)/Aw : 0; // E57
+  const fs_cc = (Fdl*1000)/Acc;                        // E70
+
+  const rows = [
+    {i:1, name:'Bearing at contact (dp·(tm+2tc))', demand:fp, allow:allow1},
+    {i:2, name:"Shear at a-a and a'-a' (1.1·0.5 Fdl / Aₐ′)", demand:fs_aa, allow:allow2},
+    {i:3, name:'Tension at b-b (Fdl / A_b′)', demand:fa_bb, allow:allow3},
+    {i:4, name:'Weld shear (2·F′ / A_w)', demand:fs_weld, allow:allow4},
+    {i:5, name:'Tear-out at c-c (Fdl / A_c-c)', demand:fs_cc, allow:allow5},
+  ];
+
+  const tbody=document.getElementById('rows');
+  let Ugov = -Infinity;
+  tbody.innerHTML = rows.map(r=>{
+    const UC = r.demand/r.allow;
+    Ugov = Math.max(Ugov, UC);
+    const status = (UC<=1) ? 'PASS' : 'FAIL';
+    const cls = (UC<=1) ? 'pass' : 'fail';
+    return `<tr class="border-b">
+      <td class="py-2">${r.i}</td>
+      <td class="py-2">${r.name}</td>
+      <td class="py-2 mono">${fmt(r.demand)}</td>
+      <td class="py-2 mono">${fmt(r.allow)}</td>
+      <td class="py-2 mono">${fmt(UC,3)}</td>
+      <td class="py-2"><span class="${cls} px-2 py-1 rounded">${status}</span></td>
+    </tr>`;
+  }).join('');
+  set('UGov', fmt(Ugov,3));
+
+  // Helpers box
+  document.getElementById('helpers').innerHTML =
+    `Aₐ′=(rm-0.5·dh)·tm + 2·(rc-0.5·dh)·tc = ${fmt(Aa)} mm²<br>`+
+    `A_b′=2·Aₐ′ = ${fmt(Ab)} mm²<br>`+
+    `A_c-c=tm·ℓ = ${fmt(Acc)} mm²<br>`+
+    `A_w=2·rc·w·π/√2 = ${isFinite(Aw)?fmt(Aw):'—'} mm²<br>`+
+    `F′=tc·Fdl/(tm+2tc) = ${fmt(Fprime_kN,3)} kN`;
+
+  // Snapshot
+  document.getElementById('snap').innerText =
+    `dp=${dp} dh=${dh} rm=${rm} rc=${rc} tm=${tm} tc=${tc} w=${w} ℓ=${ell} fy=${fy} Load=${L} v=${v} → Fdl=${fmt(Fdl)} kN`;
+
+  draw();
+}
+
+function draw(){
+  const can=document.getElementById('gfx'); const ctx=can.getContext('2d');
+  ctx.clearRect(0,0,can.width,can.height);
+
+  const dp=gv('dp'), dh=gv('dh'), rm=gv('rm'), rc=gv('rc'), tm=gv('tm'), tc=gv('tc'), w=gv('wleg');
+  const ang=gv('ang')*Math.PI/180;
+
+  const pad=20, R=Math.max(rm, rc||rm), S=Math.min((can.width-160)/(2*R+260), (can.height-60)/(2*R+80));
+  const cx=pad+R*S+60, cy=pad+R*S;
+  const rightX=cx+R*S+80, baseY=cy+R*S+20;
+
+  // Base & right cheek indicator
+  ctx.strokeStyle="#111"; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.moveTo(pad, baseY); ctx.lineTo(can.width-pad, baseY); ctx.stroke();
+
+  // Outer radii (main & cheek)
+  ctx.beginPath(); ctx.arc(cx, cy, rm*S, 0, Math.PI*2); ctx.stroke();
+  if(rc>0){ctx.setLineDash([6,4]); ctx.beginPath(); ctx.arc(cx, cy, rc*S, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);}
+
+  // Inner hole
+  ctx.beginPath(); ctx.arc(cx, cy, (dh/2)*S, 0, Math.PI*2); ctx.stroke();
+
+  // Load arrow
+  const L=rm*S*1.2; const ax=cx+Math.cos(ang)*L, ay=cy-Math.sin(ang)*L;
+  ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(ax,ay); ctx.stroke();
+  ctx.beginPath(); const ah=8;
+  ctx.moveTo(ax,ay);
+  ctx.lineTo(ax-Math.cos(ang)*ah - Math.sin(ang)*ah*0.6, ay+Math.sin(ang)*ah - Math.cos(ang)*ah*0.6);
+  ctx.lineTo(ax-Math.cos(ang)*ah + Math.sin(ang)*ah*0.6, ay+Math.sin(ang)*ah + Math.cos(ang)*ah*0.6);
+  ctx.closePath(); ctx.fill();
+  ctx.font="12px ui-monospace"; ctx.fillText(`α=${fmt(gv('ang'))}°`, ax+6, ay-6); ctx.fillText('Loading', ax+6, ay-22);
+
+  // Labels
+  ctx.font="12px ui-monospace";
+  ctx.fillText(`rm`, cx+rm*S+6, cy-6);
+  if(rc>0) ctx.fillText(`rc`, cx+rc*S+6, cy+14);
+  ctx.fillText(`dh`, cx-(dh/2)*S-8, cy-6);
+
+  // Side thickness/weld sketch
+  const sx=rightX, sy=cy-40, h=80;
+  const tmw=tm*1.1, tcw=tc*1.1;
+  ctx.fillStyle="#cbd5e1"; ctx.fillRect(sx, sy, tmw, h); ctx.strokeRect(sx, sy, tmw, h);
+  if(tc>0){ctx.fillStyle="#e5e7eb"; ctx.fillRect(sx-tcw, sy, tcw, h); ctx.strokeRect(sx-tcw, sy, tcw, h);
+           ctx.fillRect(sx+tmw, sy, tcw, h); ctx.strokeRect(sx+tmw, sy, tcw, h);}
+  ctx.fillStyle="#000"; ctx.fillText(`tm`, sx+tmw/2-10, sy-6);
+  if(tc>0){ctx.fillText(`tc`, sx-tcw/2-8, sy-6); ctx.fillText(`tc`, sx+tmw+tcw/2-8, sy-6);}
+  ctx.fillText(`w (leg)`, sx+tmw+8, sy+h+14);
+}
+
+for(const id of ['dp','dh','rm','rc','tm','tc','wleg','ell','fy','Load','v','ang']){
+  document.getElementById(id).addEventListener('input', compute);
+}
+compute();
+</script>
+</body>
+</html>
