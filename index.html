@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Padeye – Spreadsheet-Exact Checks</title>
+<title>Padeye Checks</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   html,body{height:100%} .card{border-radius:1rem;box-shadow:0 10px 20px rgba(0,0,0,.08)}
@@ -22,7 +22,7 @@
 <body class="bg-zinc-50 text-zinc-900">
 <div class="max-w-6xl mx-auto px-4 py-6">
   <header class="mb-6 flex items-center justify-between">
-    <h1 class="text-2xl font-semibold">Padeye – Spreadsheet-Exact Checks</h1>
+    <h1 class="text-2xl font-semibold">Padeye Checks</h1>
     <div class="no-print flex gap-2">
       <button id="helpBtn" class="px-4 py-2 rounded-lg border border-zinc-300 hover:bg-zinc-100">Help</button>
       <button onclick="window.print()" class="px-4 py-2 rounded-lg bg-zinc-900 text-white">Print/Save</button>
@@ -36,11 +36,11 @@
         <canvas id="gfx" width="900" height="360" class="w-full rounded-lg border"></canvas>
       </div>
       <div class="text-sm space-y-2">
-        <p>Infographic updates live. Dimensions in <b>mm</b>, load in <b>kN</b>. Matches your workbook cells (rows 30–73).</p>
+        <p>Infographic updates live. Dimensions in <b>mm</b>, load in <b>kN</b>.</p>
         <ul class="list-disc pl-5">
           <li>dp, dh, rm, rc, tm, tc, weld leg <b>w</b>, tear-out length <b>ℓ</b></li>
           <li>Loading × safety factor → Fdl (kN)</li>
-          <li>Allowables from fy with sheet’s fractions: 0.9, 0.4, 0.45, 0.4, 0.4</li>
+          <li>Allowables from fy with fractions: 0.9, 0.4, 0.45, 0.4, 0.4</li>
         </ul>
       </div>
     </div>
@@ -152,7 +152,7 @@
   </section>
 
   <footer class="text-xs text-zinc-500 mt-6">
-    Based on your workbook logic (rows 30–73): 0.9/0.4/0.45 factors of fy; 1.1·0.5 split for shear at a-a; weld throat = leg/√2 on a circular path 2πrc; F′ per cheek = tc·Fdl/(tm+2tc).
+   Ingeniarch 2025
   </footer>
 </div>
 
@@ -255,7 +255,7 @@ function compute(){
   if(tc>0 && rc<=0) warns.push(`Cheeks present but rc ≤ 0. Set rc.`);
   document.getElementById('warns').innerHTML = warns.map(t=>`<div class="warn px-3 py-2 rounded-lg">${t}</div>`).join('');
 
-  // === Spreadsheet logic ===
+  // === Logic ===
   // Areas (mm²)
   const Aa = (rm-0.5*dh)*tm + 2*(rc-0.5*dh)*tc;   // J45
   const Ab = 2*Aa;                                // J53
@@ -380,5 +380,6 @@ helpModal.addEventListener('click',e=>{ if(e.target===helpModal) helpModal.class
 </script>
 </body>
 </html>
+
 
 
