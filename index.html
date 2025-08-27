@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Padeye – Checks</title>
+<title>Padeye – Spreadsheet-Exact Checks</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   html,body{height:100%} .card{border-radius:1rem;box-shadow:0 10px 20px rgba(0,0,0,.08)}
@@ -13,13 +13,20 @@
   .pass{color:#065f46;background:#ecfdf5;border:1px solid #10b981}
   .fail{color:#7f1d1d;background:#fef2f2;border:1px solid #ef4444}
   .warn{color:#92400e;background:#fffbeb;border:1px solid #f59e0b}
+
+  /* --- Help modal (added) --- */
+  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);z-index:50}
+  .modal.open{display:flex}
 </style>
 </head>
 <body class="bg-zinc-50 text-zinc-900">
 <div class="max-w-6xl mx-auto px-4 py-6">
   <header class="mb-6 flex items-center justify-between">
-    <h1 class="text-2xl font-semibold">Padeye – Checks</h1>
-    <button onclick="window.print()" class="no-print px-4 py-2 rounded-lg bg-zinc-900 text-white">Print/Save</button>
+    <h1 class="text-2xl font-semibold">Padeye – Spreadsheet-Exact Checks</h1>
+    <div class="no-print flex gap-2">
+      <button id="helpBtn" class="px-4 py-2 rounded-lg border border-zinc-300 hover:bg-zinc-100">Help</button>
+      <button onclick="window.print()" class="px-4 py-2 rounded-lg bg-zinc-900 text-white">Print/Save</button>
+    </div>
   </header>
 
   <!-- Graphic -->
@@ -29,11 +36,11 @@
         <canvas id="gfx" width="900" height="360" class="w-full rounded-lg border"></canvas>
       </div>
       <div class="text-sm space-y-2">
-        <p>Infographic updates live. Dimensions in <b>mm</b>, load in <b>kN</b></p>
+        <p>Infographic updates live. Dimensions in <b>mm</b>, load in <b>kN</b>. Matches your workbook cells (rows 30–73).</p>
         <ul class="list-disc pl-5">
           <li>dp, dh, rm, rc, tm, tc, weld leg <b>w</b>, tear-out length <b>ℓ</b></li>
           <li>Loading × safety factor → Fdl (kN)</li>
-          <li>Allowables from fy with fractions: 0.9, 0.4, 0.45, 0.4, 0.4</li>
+          <li>Allowables from fy with sheet’s fractions: 0.9, 0.4, 0.45, 0.4, 0.4</li>
         </ul>
       </div>
     </div>
@@ -145,11 +152,82 @@
   </section>
 
   <footer class="text-xs text-zinc-500 mt-6">
-    Ingeniarch Labs
+    Based on your workbook logic (rows 30–73): 0.9/0.4/0.45 factors of fy; 1.1·0.5 split for shear at a-a; weld throat = leg/√2 on a circular path 2πrc; F′ per cheek = tc·Fdl/(tm+2tc).
   </footer>
 </div>
 
+<!-- Help Modal (added) -->
+<div id="helpModal" class="modal no-print">
+  <div class="bg-white max-w-3xl w-full mx-4 rounded-2xl shadow-xl border">
+    <div class="px-6 py-4 border-b flex items-center justify-between">
+      <h3 class="text-lg font-semibold">Padeye Help</h3>
+      <button id="helpClose" class="px-2 py-1 rounded-md border border-zinc-300 hover:bg-zinc-100">Close</button>
+    </div>
+    <div class="px-6 py-5 space-y-4 text-sm leading-6">
+      <p><b>What this tool does:</b> verifies a padeye (lifting lug) by checking bearing, shear-out, net-section tension, cheek-weld shear, and reports the governing utilisation (UC). The schematic canvas shows geometry and load direction.</p>
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <h4 class="font-medium mb-1">Inputs</h4>
+          <ul class="list-disc pl-5">
+            <li><b>dp</b> – pin diameter.</li>
+            <li><b>dh</b> – hole diameter (clearance).</li>
+            <li><b>rm</b> – outer radius of the main plate arc.</li>
+            <li><b>rc</b> – outer radius for cheek plates (if used).</li>
+            <li><b>tm</b> – main plate thickness.</li>
+            <li><b>tc</b> – cheek plate thickness (both sides assumed).</li>
+            <li><b>w</b> – fillet weld leg size for cheeks.</li>
+            <li><b>ℓ</b> – ligament length used for tear-out (c-c).</li>
+            <li><b>fy</b> – steel yield strength (N/mm²).</li>
+            <li><b>Loading</b> & <b>v</b> – design load and factor. The product is <b>Fdl</b>.</li>
+            <li><b>α</b> – load angle for the arrow on the graphic (informational).</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-medium mb-1">Results</h4>
+          <ul class="list-disc pl-5">
+            <li><b>Bearing at contact</b>: \( f_p = F_{dl} / (d_p\,(t_m+2t_c)) \) ≤ 0.9·fy.</li>
+            <li><b>Shear at a-a</b>: \( f_s = 1.1·0.5·F_{dl} / A_{a'} \) ≤ 0.4·fy, where \( A_{a'}=(r_m-0.5d_h)t_m+2(r_c-0.5d_h)t_c \).</li>
+            <li><b>Tension at b-b</b>: \( f_a = F_{dl} / A_{b'} \) ≤ 0.45·fy, with \( A_{b'}=2A_{a'} \).</li>
+            <li><b>Cheek-weld shear</b>: throat area \( A_w = 2πr_c·w/√2 \); load per cheek \( F' = t_c·F_{dl}/(t_m+2t_c) \); check \( 2F' / A_w ≤ 0.4·fy \).</li>
+            <li><b>Tear-out at c-c</b>: \( f_s = F_{dl}/(t_m·ℓ) \) ≤ 0.4·fy.</li>
+            <li><b>UC</b> = demand / allowable; PASS if UC ≤ 1.0.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h4 class="font-medium">How to use</h4>
+      <ol class="list-decimal pl-5">
+        <li>Enter geometry and material values (mm and N/mm²).</li>
+        <li>Set the design load and factor to get <b>Fdl</b>.</li>
+        <li>Review PASS/FAIL. The “Governing UC” card shows the worst case.</li>
+        <li>Use the graphic to sanity-check proportions and load direction.</li>
+      </ol>
+
+      <h4 class="font-medium">Typical detailing tips</h4>
+      <ul class="list-disc pl-5">
+        <li>Provide hole clearance (dh &gt; dp) suitable for the pin or shackle.</li>
+        <li>Ensure cheeks fit the pin jaw width if applicable.</li>
+        <li>Adopt sensible radii and fillets to avoid sharp stress raisers.</li>
+        <li>Pick weld sizes that meet both strength and practical fabrication limits.</li>
+      </ul>
+
+      <h4 class="font-medium">Troubleshooting</h4>
+      <ul class="list-disc pl-5">
+        <li><b>High bearing UC</b> → increase thickness (tm/tc) or pin diameter, or reduce load.</li>
+        <li><b>Shear a-a failing</b> → increase radii (rm/rc) or thicknesses.</li>
+        <li><b>Net tension failing</b> → same as above; remember \(A_{b'}=2A_{a'}\).</li>
+        <li><b>Weld check failing</b> → increase weld leg <b>w</b> or cheek radius <b>rc</b>.</li>
+        <li><b>Tear-out failing</b> → increase ℓ or tm.</li>
+      </ul>
+
+      <p class="text-xs text-zinc-500">This tool supports preliminary and detailed checks with code-style allowables. Apply engineering judgement and project-specific requirements.</p>
+    </div>
+  </div>
+</div>
+
 <script>
+/* --- existing app logic (unchanged) --- */
 function gv(id){return parseFloat(document.getElementById(id).value||'0');}
 function set(id,v){document.getElementById(id).innerText=v;}
 function fmt(x,d=2){return isFinite(x)?x.toFixed(d):'—';}
@@ -177,7 +255,7 @@ function compute(){
   if(tc>0 && rc<=0) warns.push(`Cheeks present but rc ≤ 0. Set rc.`);
   document.getElementById('warns').innerHTML = warns.map(t=>`<div class="warn px-3 py-2 rounded-lg">${t}</div>`).join('');
 
-  // === Logic ===
+  // === Spreadsheet logic ===
   // Areas (mm²)
   const Aa = (rm-0.5*dh)*tm + 2*(rc-0.5*dh)*tc;   // J45
   const Ab = 2*Aa;                                // J53
@@ -293,6 +371,14 @@ for(const id of ['dp','dh','rm','rc','tm','tc','wleg','ell','fy','Load','v','ang
   document.getElementById(id).addEventListener('input', compute);
 }
 compute();
+
+/* --- Help modal behaviour (added) --- */
+const helpModal=document.getElementById('helpModal');
+document.getElementById('helpBtn').addEventListener('click',()=>helpModal.classList.add('open'));
+document.getElementById('helpClose').addEventListener('click',()=>helpModal.classList.remove('open'));
+helpModal.addEventListener('click',e=>{ if(e.target===helpModal) helpModal.classList.remove('open');});
 </script>
 </body>
 </html>
+
+
