@@ -3,40 +3,63 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Padeye Checks</title>
+<title>Padeye – Spreadsheet-Exact Checks (Dark)</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  html,body{height:100%} .card{border-radius:1rem;box-shadow:0 10px 20px rgba(0,0,0,.08)}
-  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono","Courier New",monospace}
-  @media print{.no-print{display:none!important}.card{box-shadow:none;border:1px solid #999}}
-  canvas{image-rendering:crisp-edges}
-  .pass{color:#065f46;background:#ecfdf5;border:1px solid #10b981}
-  .fail{color:#7f1d1d;background:#fef2f2;border:1px solid #ef4444}
-  .warn{color:#92400e;background:#fffbeb;border:1px solid #f59e0b}
+  :root{
+    --bg:#0b1220; --card:#0f172a; --panel:#0b152e; --muted:#94a3b8; --text:#e5e7eb;
+    --line:#1f2a44; --accent:#67e8f9; --good:#10b981; --warn:#eab308; --bad:#ef4444;
+  }
+  html,body{height:100%}
+  body{background:var(--bg); color:var(--text)}
+  .card{border-radius:1rem; box-shadow:0 10px 20px rgba(0,0,0,.25); background:var(--card); border:1px solid var(--line)}
+  .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;}
+  @media print{.no-print{display:none!important} .card{box-shadow:none;border:1px solid #999; background:#fff; color:#111}}
+  canvas{image-rendering: crisp-edges; background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)); border:1px solid var(--line); border-radius:.5rem}
 
-  /* --- Help modal (added) --- */
-  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4);z-index:50}
+  /* Buttons */
+  .btn{border:1px solid var(--line); background:var(--panel); color:var(--text); border-radius:.75rem; padding:.5rem 1rem}
+  .btn:hover{background:#0e1c3a}
+  .btn.primary{background:#111827; border-color:#1f2937}
+  .btn.primary:hover{background:#0f172a}
+  .btn.ghost{background:transparent}
+
+  /* Table */
+  table{color:var(--text)}
+  thead{color:var(--muted)}
+  tr{border-color:var(--line)}
+  .muted{color:var(--muted)}
+  .chip{border:1px solid var(--line); padding:.125rem .5rem; border-radius:.5rem}
+  .pass{color:#10b981; background:rgba(16,185,129,.12); border:1px solid rgba(16,185,129,.3)}
+  .fail{color:#fca5a5; background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.35)}
+  .warn{color:#fbbf24; background:rgba(234,179,8,.08); border:1px solid rgba(234,179,8,.35)}
+
+  /* Help modal */
+  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,.6);z-index:50}
   .modal.open{display:flex}
+  .modal-card{background:var(--card); border:1px solid var(--line); color:var(--text); border-radius:1rem; max-width:48rem; width:100%}
+  .kbd{border:1px solid var(--line); border-bottom-width:2px; background:#0c1937; padding:.1rem .35rem; border-radius:.375rem; font-size:.8em}
+  a{color:var(--accent)}
 </style>
 </head>
-<body class="bg-zinc-50 text-zinc-900">
+<body>
 <div class="max-w-6xl mx-auto px-4 py-6">
   <header class="mb-6 flex items-center justify-between">
-    <h1 class="text-2xl font-semibold">Padeye Checks</h1>
+    <h1 class="text-2xl font-semibold">Padeye – Spreadsheet-Exact Checks</h1>
     <div class="no-print flex gap-2">
-      <button id="helpBtn" class="px-4 py-2 rounded-lg border border-zinc-300 hover:bg-zinc-100">Help</button>
-      <button onclick="window.print()" class="px-4 py-2 rounded-lg bg-zinc-900 text-white">Print/Save</button>
+      <button id="helpBtn" class="btn">Help</button>
+      <button onclick="window.print()" class="btn primary">Print/Save</button>
     </div>
   </header>
 
   <!-- Graphic -->
-  <section class="card bg-white p-4 mb-6">
+  <section class="card p-4 mb-6">
     <div class="grid md:grid-cols-3 gap-4">
       <div class="md:col-span-2">
-        <canvas id="gfx" width="900" height="360" class="w-full rounded-lg border"></canvas>
+        <canvas id="gfx" width="900" height="360" class="w-full"></canvas>
       </div>
       <div class="text-sm space-y-2">
-        <p>Infographic updates live. Dimensions in <b>mm</b>, load in <b>kN</b>.</p>
+        <p class="muted">Infographic updates live. Dimensions in <b>mm</b>, load in <b>kN</b>. Matches your workbook cells (rows 30–73).</p>
         <ul class="list-disc pl-5">
           <li>dp, dh, rm, rc, tm, tc, weld leg <b>w</b>, tear-out length <b>ℓ</b></li>
           <li>Loading × safety factor → Fdl (kN)</li>
@@ -48,62 +71,62 @@
 
   <!-- Inputs -->
   <section class="grid lg:grid-cols-2 gap-6">
-    <div class="card bg-white p-4">
+    <div class="card p-4">
       <h2 class="font-semibold mb-3">Geometry & Materials</h2>
       <div class="grid grid-cols-2 gap-3 text-sm">
         <label class="block">Pin Ø dp (mm)
-          <input id="dp" type="number" step="0.1" value="108" class="mt-1 w-full rounded-md border px-2 py-1">
+          <input id="dp" type="number" step="0.1" value="108" class="mt-1 w-full rounded-md border px-2 py-1" style="background:#0b152e;color:var(--text);border-color:var(--line)">
         </label>
         <label class="block">Hole Ø dh (mm)
-          <input id="dh" type="number" step="0.1" value="112" class="mt-1 w-full rounded-md border px-2 py-1">
+          <input id="dh" type="number" step="0.1" value="112" class="mt-1 w-full rounded-md border px-2 py-1" style="background:#0b152e;color:var(--text);border-color:var(--line)">
         </label>
 
         <label class="block">Mainplate radius rm (mm)
-          <input id="rm" type="number" step="0.1" value="200" class="mt-1 w-full rounded-md border px-2 py-1">
+          <input id="rm" type="number" step="0.1" value="200" class="mt-1 w-full rounded-md border px-2 py-1" style="background:#0b152e;color:var(--text);border-color:var(--line)">
         </label>
         <label class="block">Cheek radius rc (mm)
-          <input id="rc" type="number" step="0.1" value="175" class="mt-1 w-full rounded-md border px-2 py-1">
+          <input id="rc" type="number" step="0.1" value="175" class="mt-1 w-full rounded-md border px-2 py-1" style="background:#0b152e;color:var(--text);border-color:var(--line)">
         </label>
 
         <label class="block">Mainplate thickness tm (mm)
-          <input id="tm" type="number" step="0.1" value="40" class="mt-1 w-full rounded-md border px-2 py-1">
+          <input id="tm" type="number" step="0.1" value="40" class="mt-1 w-full rounded-md border px-2 py-1" style="background:#0b152e;color:var(--text);border-color:var(--line)">
         </label>
         <label class="block">Cheek thickness tc (mm)
-          <input id="tc" type="number" step="0.1" value="20" class="mt-1 w-full rounded-md border px-2 py-1">
+          <input id="tc" type="number" step="0.1" value="20" class="mt-1 w-full rounded-md border px-2 py-1" style="background:#0b152e;color:var(--text);border-color:var(--line)">
         </label>
 
         <label class="block">Cheek weld leg w (mm)
-          <input id="wleg" type="number" step="0.1" value="12" class="mt-1 w-full rounded-md border px-2 py-1">
+          <input id="wleg" type="number" step="0.1" value="12" class="mt-1 w-full rounded-md border px-2 py-1" style="background:#0b152e;color:var(--text);border-color:var(--line)">
         </label>
         <label class="block">Tear-out length ℓ (mm)
-          <input id="ell" type="number" step="0.1" value="400" class="mt-1 w-full rounded-md border px-2 py-1">
+          <input id="ell" type="number" step="0.1" value="400" class="mt-1 w-full rounded-md border px-2 py-1" style="background:#0b152e;color:var(--text);border-color:var(--line)">
         </label>
 
         <label class="block">Yield fy (N/mm²)
-          <input id="fy" type="number" step="1" value="355" class="mt-1 w-full rounded-md border px-2 py-1">
+          <input id="fy" type="number" step="1" value="355" class="mt-1 w-full rounded-md border px-2 py-1" style="background:#0b152e;color:var(--text);border-color:var(--line)">
         </label>
         <label class="block">Load angle α (deg)
-          <input id="ang" type="number" step="0.1" value="20" class="mt-1 w-full rounded-md border px-2 py-1">
+          <input id="ang" type="number" step="0.1" value="20" class="mt-1 w-full rounded-md border px-2 py-1" style="background:#0b152e;color:var(--text);border-color:var(--line)">
         </label>
       </div>
     </div>
 
-    <div class="card bg-white p-4">
+    <div class="card p-4">
       <h2 class="font-semibold mb-3">Loading (matches C27:C30)</h2>
       <div class="grid grid-cols-2 gap-3 text-sm">
         <label class="block">Loading (kN)
-          <input id="Load" type="number" step="0.1" value="1500" class="mt-1 w-full rounded-md border px-2 py-1">
+          <input id="Load" type="number" step="0.1" value="1500" class="mt-1 w-full rounded-md border px-2 py-1" style="background:#0b152e;color:var(--text);border-color:var(--line)">
         </label>
         <label class="block">Safety factor v
-          <input id="v" type="number" step="0.01" value="1.3" class="mt-1 w-full rounded-md border px-2 py-1">
+          <input id="v" type="number" step="0.01" value="1.3" class="mt-1 w-full rounded-md border px-2 py-1" style="background:#0b152e;color:var(--text);border-color:var(--line)">
         </label>
-        <div class="col-span-2 p-3 rounded-lg bg-zinc-50 border">
-          <div>Fdl = Loading × v</div>
+        <div class="col-span-2 p-3 rounded-lg" style="background:#0b152e;border:1px solid var(--line)">
+          <div class="muted">Fdl = Loading × v</div>
           <div class="mono text-xl"><span id="Fdl">—</span> kN</div>
         </div>
       </div>
-      <p class="text-xs text-zinc-500 mt-2">Inches shown beside mm for reference only.</p>
-      <div class="grid grid-cols-2 gap-3 text-xs mt-3">
+      <p class="text-xs muted mt-2">Inches shown beside mm for reference only.</p>
+      <div class="grid grid-cols-2 gap-3 text-xs mt-3 muted">
         <div>dp = <span id="dp_in">—</span> in</div>
         <div>dh = <span id="dh_in">—</span> in</div>
         <div>rm = <span id="rm_in">—</span> in</div>
@@ -117,7 +140,7 @@
   </section>
 
   <!-- Results -->
-  <section class="card bg-white p-4 mt-6">
+  <section class="card p-4 mt-6">
     <h2 class="font-semibold mb-3">Checks & Utilisations (like L38:L71)</h2>
     <div id="warns" class="space-y-2 mb-3"></div>
     <div class="overflow-x-auto">
@@ -136,32 +159,34 @@
       </table>
     </div>
     <div class="grid md:grid-cols-3 gap-3 mt-4 text-sm">
-      <div class="p-3 rounded-lg bg-zinc-50 border">
+      <div class="p-3 rounded-lg" style="background:#0b152e;border:1px solid var(--line)">
         <div class="font-medium">Areas & helpers</div>
-        <div id="helpers" class="mono text-xs mt-1"></div>
+        <div id="helpers" class="mono text-xs mt-1 muted"></div>
       </div>
-      <div class="p-3 rounded-lg bg-zinc-50 border">
+      <div class="p-3 rounded-lg" style="background:#0b152e;border:1px solid var(--line)">
         <div class="font-medium">Governing UC</div>
         <div class="mono text-2xl"><span id="UGov">—</span></div>
       </div>
-      <div class="p-3 rounded-lg bg-zinc-50 border">
+      <div class="p-3 rounded-lg" style="background:#0b152e;border:1px solid var(--line)">
         <div class="font-medium">Snapshot</div>
-        <div id="snap" class="mono text-xs mt-1"></div>
+        <div id="snap" class="mono text-xs mt-1 muted"></div>
       </div>
     </div>
   </section>
 
-  <footer class="text-xs text-zinc-500 mt-6">
-   Ingeniarch 2025
+  <footer class="text-xs muted mt-6">
+    Factors: 0.9/0.4/0.45 of fy; 1.1·0.5 split for shear at a–a; weld throat = leg/√2 on a circular path 2πrc; per-cheek load F′ = tc·Fdl/(tm+2tc).
   </footer>
 </div>
 
-<!-- Help Modal (added) -->
+<!-- Help Modal -->
 <div id="helpModal" class="modal no-print">
-  <div class="bg-white max-w-3xl w-full mx-4 rounded-2xl shadow-xl border">
-    <div class="px-6 py-4 border-b flex items-center justify-between">
-      <h3 class="text-lg font-semibold">Padeye Help</h3>
-      <button id="helpClose" class="px-2 py-1 rounded-md border border-zinc-300 hover:bg-zinc-100">Close</button>
+  <div class="modal-card mx-4">
+    <div class="px-6 py-4 border-b" style="border-color:var(--line)">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold">Padeye Help</h3>
+        <button id="helpClose" class="btn ghost">Close <span class="kbd">Esc</span></button>
+      </div>
     </div>
     <div class="px-6 py-5 space-y-4 text-sm leading-6">
       <p><b>What this tool does:</b> verifies a padeye (lifting lug) by checking bearing, shear-out, net-section tension, cheek-weld shear, and reports the governing utilisation (UC). The schematic canvas shows geometry and load direction.</p>
@@ -169,113 +194,88 @@
       <div class="grid md:grid-cols-2 gap-4">
         <div>
           <h4 class="font-medium mb-1">Inputs</h4>
-          <ul class="list-disc pl-5">
-            <li><b>dp</b> – pin diameter.</li>
-            <li><b>dh</b> – hole diameter (clearance).</li>
-            <li><b>rm</b> – outer radius of the main plate arc.</li>
-            <li><b>rc</b> – outer radius for cheek plates (if used).</li>
-            <li><b>tm</b> – main plate thickness.</li>
-            <li><b>tc</b> – cheek plate thickness (both sides assumed).</li>
-            <li><b>w</b> – fillet weld leg size for cheeks.</li>
-            <li><b>ℓ</b> – ligament length used for tear-out (c-c).</li>
-            <li><b>fy</b> – steel yield strength (N/mm²).</li>
-            <li><b>Loading</b> & <b>v</b> – design load and factor. The product is <b>Fdl</b>.</li>
-            <li><b>α</b> – load angle for the arrow on the graphic (informational).</li>
+          <ul class="list-disc pl-5 muted">
+            <li><b>dp</b> – pin diameter; <b>dh</b> – hole diameter.</li>
+            <li><b>rm</b> – main-plate outer radius; <b>rc</b> – cheek outer radius.</li>
+            <li><b>tm</b> – main-plate thickness; <b>tc</b> – cheek thickness (both sides).</li>
+            <li><b>w</b> – fillet weld leg size for cheeks; <b>ℓ</b> – ligament length for tear-out.</li>
+            <li><b>fy</b> – steel yield (N/mm²); <b>Loading</b> & <b>v</b> → <b>Fdl</b>.</li>
+            <li><b>α</b> – load angle for the arrow (visual only).</li>
           </ul>
         </div>
         <div>
-          <h4 class="font-medium mb-1">Results</h4>
-          <ul class="list-disc pl-5">
-            <li><b>Bearing at contact</b>: \( f_p = F_{dl} / (d_p\,(t_m+2t_c)) \) ≤ 0.9·fy.</li>
-            <li><b>Shear at a-a</b>: \( f_s = 1.1·0.5·F_{dl} / A_{a'} \) ≤ 0.4·fy, where \( A_{a'}=(r_m-0.5d_h)t_m+2(r_c-0.5d_h)t_c \).</li>
-            <li><b>Tension at b-b</b>: \( f_a = F_{dl} / A_{b'} \) ≤ 0.45·fy, with \( A_{b'}=2A_{a'} \).</li>
-            <li><b>Cheek-weld shear</b>: throat area \( A_w = 2πr_c·w/√2 \); load per cheek \( F' = t_c·F_{dl}/(t_m+2t_c) \); check \( 2F' / A_w ≤ 0.4·fy \).</li>
-            <li><b>Tear-out at c-c</b>: \( f_s = F_{dl}/(t_m·ℓ) \) ≤ 0.4·fy.</li>
-            <li><b>UC</b> = demand / allowable; PASS if UC ≤ 1.0.</li>
+          <h4 class="font-medium mb-1">Checks</h4>
+          <ul class="list-disc pl-5 muted">
+            <li><b>Bearing</b>: \( f_p = F_{dl} /(d_p (t_m+2t_c)) \) ≤ 0.9·fy.</li>
+            <li><b>Shear at a-a</b>: \( f_s = 1.1·0.5·F_{dl} / A_{a'} \) ≤ 0.4·fy, \( A_{a'}=(r_m-0.5d_h)t_m+2(r_c-0.5d_h)t_c \).</li>
+            <li><b>Tension b-b</b>: \( f_a = F_{dl}/A_{b'} \) ≤ 0.45·fy, \( A_{b'}=2A_{a'} \).</li>
+            <li><b>Cheek-weld shear</b>: \( A_w=2πr_c w/√2 \), \( F' = t_c F_{dl}/(t_m+2t_c) \), check \( 2F'/A_w ≤ 0.4·fy \).</li>
+            <li><b>Tear-out c-c</b>: \( f_s = F_{dl}/(t_m ℓ) \) ≤ 0.4·fy.</li>
           </ul>
         </div>
       </div>
 
       <h4 class="font-medium">How to use</h4>
-      <ol class="list-decimal pl-5">
-        <li>Enter geometry and material values (mm and N/mm²).</li>
-        <li>Set the design load and factor to get <b>Fdl</b>.</li>
-        <li>Review PASS/FAIL. The “Governing UC” card shows the worst case.</li>
+      <ol class="list-decimal pl-5 muted">
+        <li>Enter geometry and material values (mm & N/mm²).</li>
+        <li>Set design load and factor to get <b>Fdl</b>.</li>
+        <li>Review PASS/FAIL badges and <b>Governing UC</b>.</li>
         <li>Use the graphic to sanity-check proportions and load direction.</li>
       </ol>
 
-      <h4 class="font-medium">Typical detailing tips</h4>
-      <ul class="list-disc pl-5">
-        <li>Provide hole clearance (dh &gt; dp) suitable for the pin or shackle.</li>
-        <li>Ensure cheeks fit the pin jaw width if applicable.</li>
-        <li>Adopt sensible radii and fillets to avoid sharp stress raisers.</li>
-        <li>Pick weld sizes that meet both strength and practical fabrication limits.</li>
+      <h4 class="font-medium">Tips</h4>
+      <ul class="list-disc pl-5 muted">
+        <li>Ensure adequate hole clearance (dh &gt; dp).</li>
+        <li>Cheeks must fit the shackle jaw width.</li>
+        <li>Prefer generous radii/fillets to reduce stress concentrations.</li>
+        <li>Increase weld leg <b>w</b> or radius <b>rc</b> if weld UC governs.</li>
       </ul>
 
-      <h4 class="font-medium">Troubleshooting</h4>
-      <ul class="list-disc pl-5">
-        <li><b>High bearing UC</b> → increase thickness (tm/tc) or pin diameter, or reduce load.</li>
-        <li><b>Shear a-a failing</b> → increase radii (rm/rc) or thicknesses.</li>
-        <li><b>Net tension failing</b> → same as above; remember \(A_{b'}=2A_{a'}\).</li>
-        <li><b>Weld check failing</b> → increase weld leg <b>w</b> or cheek radius <b>rc</b>.</li>
-        <li><b>Tear-out failing</b> → increase ℓ or tm.</li>
-      </ul>
-
-      <p class="text-xs text-zinc-500">This tool supports preliminary and detailed checks with code-style allowables. Apply engineering judgement and project-specific requirements.</p>
+      <p class="text-xs muted">For project work, apply the specific factors and detailing rules required by your governing standard.</p>
     </div>
   </div>
 </div>
 
 <script>
-/* --- existing app logic (unchanged) --- */
 function gv(id){return parseFloat(document.getElementById(id).value||'0');}
-function set(id,v){document.getElementById(id).innerText=v;}
+function setTxt(id,v){document.getElementById(id).innerText=v;}
 function fmt(x,d=2){return isFinite(x)?x.toFixed(d):'—';}
 function mm2in(mm){return mm/25.4;}
 
 function compute(){
-  // Inputs
   const dp=gv('dp'), dh=gv('dh'), rm=gv('rm'), rc=gv('rc');
   const tm=gv('tm'), tc=gv('tc'), w=gv('wleg'), ell=gv('ell');
   const fy=gv('fy'), L=gv('Load'), v=gv('v');
 
-  // Fdl
-  const Fdl=L*v; set('Fdl', fmt(Fdl,3));
+  const Fdl=L*v; setTxt('Fdl', fmt(Fdl,3));
 
-  // Inch helpers
-  set('dp_in', fmt(mm2in(dp),3)); set('dh_in', fmt(mm2in(dh),3));
-  set('rm_in', fmt(mm2in(rm),3)); set('rc_in', fmt(mm2in(rc),3));
-  set('tm_in', fmt(mm2in(tm),3)); set('tc_in', fmt(mm2in(tc),3));
-  set('w_in', fmt(mm2in(w),3)); set('l_in', fmt(mm2in(ell),3));
+  setTxt('dp_in', fmt(mm2in(dp),3)); setTxt('dh_in', fmt(mm2in(dh),3));
+  setTxt('rm_in', fmt(mm2in(rm),3)); setTxt('rc_in', fmt(mm2in(rc),3));
+  setTxt('tm_in', fmt(mm2in(tm),3)); setTxt('tc_in', fmt(mm2in(tc),3));
+  setTxt('w_in', fmt(mm2in(w),3));  setTxt('l_in',  fmt(mm2in(ell),3));
 
-  // Warnings
   const warns=[];
   if(dh-dp<4) warns.push(`Clearance rule: dh - dp = ${fmt(dh-dp)} mm (< 4 mm).`);
   if(rm<dh/2) warns.push(`rm < dh/2 (outer radius smaller than hole).`);
   if(tc>0 && rc<=0) warns.push(`Cheeks present but rc ≤ 0. Set rc.`);
-  document.getElementById('warns').innerHTML = warns.map(t=>`<div class="warn px-3 py-2 rounded-lg">${t}</div>`).join('');
+  document.getElementById('warns').innerHTML = warns.map(t=>`<div class="chip warn">${t}</div>`).join('');
 
-  // === Logic ===
   // Areas (mm²)
-  const Aa = (rm-0.5*dh)*tm + 2*(rc-0.5*dh)*tc;   // J45
-  const Ab = 2*Aa;                                // J53
-  const Acc = tm*ell;                             // H73
-  const Aw = (rc>0 && w>0) ? (2*rc*w*Math.PI)/Math.SQRT2 : NaN; // J62
+  const Aa = (rm-0.5*dh)*tm + 2*(rc-0.5*dh)*tc;
+  const Ab = 2*Aa;
+  const Acc = tm*ell;
+  const Aw = (rc>0 && w>0) ? (2*rc*w*Math.PI)/Math.SQRT2 : NaN;
 
-  // Allowables (MPa)
-  const allow1 = 0.9*fy;   // bearing
-  const allow2 = 0.4*fy;   // shear a-a
-  const allow3 = 0.45*fy;  // tension b-b
-  const allow4 = 0.4*fy;   // weld shear
-  const allow5 = 0.4*fy;   // tear-out c-c
+  // Allowables
+  const allow1 = 0.9*fy, allow2 = 0.4*fy, allow3 = 0.45*fy, allow4 = 0.4*fy, allow5 = 0.4*fy;
 
-  // Demands (MPa = N/mm²), Fdl is kN -> ×1000
-  const fp = (Fdl*1000)/(dp*(tm+2*tc));                // E37
-  const fs_aa = (1.1*0.5*Fdl*1000)/Aa;                 // E42
-  const fa_bb = (Fdl*1000)/Ab;                         // E50
-  const Fprime_kN = (tm+2*tc)>0 ? (tc*Fdl)/(tm+2*tc) : NaN; // H65
-  const fs_weld = (rc>0 && Aw>0) ? (2*Fprime_kN*1000)/Aw : 0; // E57
-  const fs_cc = (Fdl*1000)/Acc;                        // E70
+  // Demands (MPa)
+  const fp      = (Fdl*1000)/(dp*(tm+2*tc));
+  const fs_aa   = (1.1*0.5*Fdl*1000)/Aa;
+  const fa_bb   = (Fdl*1000)/Ab;
+  const Fp_kN   = (tm+2*tc)>0 ? (tc*Fdl)/(tm+2*tc) : NaN;
+  const fs_weld = (rc>0 && Aw>0) ? (2*Fp_kN*1000)/Aw : 0;
+  const fs_cc   = (Fdl*1000)/Acc;
 
   const rows = [
     {i:1, name:'Bearing at contact (dp·(tm+2tc))', demand:fp, allow:allow1},
@@ -292,26 +292,24 @@ function compute(){
     Ugov = Math.max(Ugov, UC);
     const status = (UC<=1) ? 'PASS' : 'FAIL';
     const cls = (UC<=1) ? 'pass' : 'fail';
-    return `<tr class="border-b">
+    return `<tr class="border-b" style="border-color:var(--line)">
       <td class="py-2">${r.i}</td>
       <td class="py-2">${r.name}</td>
       <td class="py-2 mono">${fmt(r.demand)}</td>
       <td class="py-2 mono">${fmt(r.allow)}</td>
       <td class="py-2 mono">${fmt(UC,3)}</td>
-      <td class="py-2"><span class="${cls} px-2 py-1 rounded">${status}</span></td>
+      <td class="py-2"><span class="chip ${cls}">${status}</span></td>
     </tr>`;
   }).join('');
-  set('UGov', fmt(Ugov,3));
+  setTxt('UGov', fmt(Ugov,3));
 
-  // Helpers box
   document.getElementById('helpers').innerHTML =
     `Aₐ′=(rm-0.5·dh)·tm + 2·(rc-0.5·dh)·tc = ${fmt(Aa)} mm²<br>`+
     `A_b′=2·Aₐ′ = ${fmt(Ab)} mm²<br>`+
     `A_c-c=tm·ℓ = ${fmt(Acc)} mm²<br>`+
     `A_w=2·rc·w·π/√2 = ${isFinite(Aw)?fmt(Aw):'—'} mm²<br>`+
-    `F′=tc·Fdl/(tm+2tc) = ${fmt(Fprime_kN,3)} kN`;
+    `F′=tc·Fdl/(tm+2tc) = ${fmt(Fp_kN,3)} kN`;
 
-  // Snapshot
   document.getElementById('snap').innerText =
     `dp=${dp} dh=${dh} rm=${rm} rc=${rc} tm=${tm} tc=${tc} w=${w} ℓ=${ell} fy=${fy} Load=${L} v=${v} → Fdl=${fmt(Fdl)} kN`;
 
@@ -329,11 +327,18 @@ function draw(){
   const cx=pad+R*S+60, cy=pad+R*S;
   const rightX=cx+R*S+80, baseY=cy+R*S+20;
 
+  // axes lines in subtle color
+  ctx.strokeStyle="rgba(103,232,249,.25)";
+  ctx.lineWidth=1;
+  ctx.beginPath(); for(let x=pad; x<can.width-pad; x+=60){ ctx.moveTo(x, pad); ctx.lineTo(x, can.height-pad);} ctx.stroke();
+  ctx.beginPath(); for(let y=pad; y<can.height-pad; y+=60){ ctx.moveTo(pad, y); ctx.lineTo(can.width-pad, y);} ctx.stroke();
+
   // Base & right cheek indicator
-  ctx.strokeStyle="#111"; ctx.lineWidth=1.2;
+  ctx.strokeStyle= getComputedStyle(document.body).getPropertyValue('--line'); ctx.lineWidth=1.2;
   ctx.beginPath(); ctx.moveTo(pad, baseY); ctx.lineTo(can.width-pad, baseY); ctx.stroke();
 
-  // Outer radii (main & cheek)
+  // Outer radii
+  ctx.strokeStyle="#cbd5e1";
   ctx.beginPath(); ctx.arc(cx, cy, rm*S, 0, Math.PI*2); ctx.stroke();
   if(rc>0){ctx.setLineDash([6,4]); ctx.beginPath(); ctx.arc(cx, cy, rc*S, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);}
 
@@ -342,8 +347,10 @@ function draw(){
 
   // Load arrow
   const L=rm*S*1.2; const ax=cx+Math.cos(ang)*L, ay=cy-Math.sin(ang)*L;
+  ctx.strokeStyle="#e5e7eb"; ctx.fillStyle="#e5e7eb";
   ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(ax,ay); ctx.stroke();
-  ctx.beginPath(); const ah=8;
+  const ah=8;
+  ctx.beginPath();
   ctx.moveTo(ax,ay);
   ctx.lineTo(ax-Math.cos(ang)*ah - Math.sin(ang)*ah*0.6, ay+Math.sin(ang)*ah - Math.cos(ang)*ah*0.6);
   ctx.lineTo(ax-Math.cos(ang)*ah + Math.sin(ang)*ah*0.6, ay+Math.sin(ang)*ah + Math.cos(ang)*ah*0.6);
@@ -351,7 +358,7 @@ function draw(){
   ctx.font="12px ui-monospace"; ctx.fillText(`α=${fmt(gv('ang'))}°`, ax+6, ay-6); ctx.fillText('Loading', ax+6, ay-22);
 
   // Labels
-  ctx.font="12px ui-monospace";
+  ctx.fillStyle="#9ca3af";
   ctx.fillText(`rm`, cx+rm*S+6, cy-6);
   if(rc>0) ctx.fillText(`rc`, cx+rc*S+6, cy+14);
   ctx.fillText(`dh`, cx-(dh/2)*S-8, cy-6);
@@ -359,10 +366,15 @@ function draw(){
   // Side thickness/weld sketch
   const sx=rightX, sy=cy-40, h=80;
   const tmw=tm*1.1, tcw=tc*1.1;
-  ctx.fillStyle="#cbd5e1"; ctx.fillRect(sx, sy, tmw, h); ctx.strokeRect(sx, sy, tmw, h);
-  if(tc>0){ctx.fillStyle="#e5e7eb"; ctx.fillRect(sx-tcw, sy, tcw, h); ctx.strokeRect(sx-tcw, sy, tcw, h);
-           ctx.fillRect(sx+tmw, sy, tcw, h); ctx.strokeRect(sx+tmw, sy, tcw, h);}
-  ctx.fillStyle="#000"; ctx.fillText(`tm`, sx+tmw/2-10, sy-6);
+  ctx.fillStyle="#11213f"; ctx.strokeStyle=getComputedStyle(document.body).getPropertyValue('--line');
+  ctx.fillRect(sx, sy, tmw, h); ctx.strokeRect(sx, sy, tmw, h);
+  if(tc>0){
+    ctx.fillStyle="#0e1c3a";
+    ctx.fillRect(sx-tcw, sy, tcw, h); ctx.strokeRect(sx-tcw, sy, tcw, h);
+    ctx.fillRect(sx+tmw, sy, tcw, h); ctx.strokeRect(sx+tmw, sy, tcw, h);
+  }
+  ctx.fillStyle="#cbd5e1";
+  ctx.fillText(`tm`, sx+tmw/2-10, sy-6);
   if(tc>0){ctx.fillText(`tc`, sx-tcw/2-8, sy-6); ctx.fillText(`tc`, sx+tmw+tcw/2-8, sy-6);}
   ctx.fillText(`w (leg)`, sx+tmw+8, sy+h+14);
 }
@@ -372,14 +384,12 @@ for(const id of ['dp','dh','rm','rc','tm','tc','wleg','ell','fy','Load','v','ang
 }
 compute();
 
-/* --- Help modal behaviour (added) --- */
+// Help modal behaviour
 const helpModal=document.getElementById('helpModal');
 document.getElementById('helpBtn').addEventListener('click',()=>helpModal.classList.add('open'));
 document.getElementById('helpClose').addEventListener('click',()=>helpModal.classList.remove('open'));
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') helpModal.classList.remove('open');});
 helpModal.addEventListener('click',e=>{ if(e.target===helpModal) helpModal.classList.remove('open');});
 </script>
 </body>
 </html>
-
-
-
